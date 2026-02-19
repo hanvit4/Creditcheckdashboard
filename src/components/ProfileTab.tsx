@@ -1,5 +1,6 @@
 import { User, Award, Calendar, TrendingUp, Settings, LogOut, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
+import LinkedProviders from './LinkedProviders';
 
 interface ProfileTabProps {
   credits?: number;
@@ -133,6 +134,11 @@ export default function ProfileTab({
             등록하기
           </button>
         </div>
+      </div>
+
+      {/* Linked Providers Card */}
+      <div className="mb-4">
+        <LinkedProviders />
       </div>
 
       {/* Menu List */}

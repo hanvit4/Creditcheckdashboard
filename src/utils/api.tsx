@@ -75,9 +75,8 @@ export async function getUserProfile() {
 }
 
 export async function updateUserProfile(data: {
-  nickname?: string;
-  church?: string;
-  credits?: number;
+  name?: string;
+  avatarUrl?: string;
 }) {
   return apiCall('/user/profile', {
     method: 'POST',
@@ -100,10 +99,6 @@ export async function saveTranscription(data: {
   });
 }
 
-export async function getTranscriptions() {
-  return apiCall('/transcriptions');
-}
-
 // Daily Stats APIs
 export async function getDailyStats(date?: string) {
   const query = date ? `?date=${date}` : '';
@@ -117,4 +112,40 @@ export async function getMonthlyStats(month: string) {
 // Completed Verses API
 export async function getCompletedVerses() {
   return apiCall('/completed-verses');
+}
+// ===================================
+// Social Login Provider APIs
+// ===================================
+
+// GET /user/providers - 사용자의 연동된 소셜 계정 조회
+export async function getUserProviders() {
+  return apiCall('/user/providers');
+}
+
+export interface ProviderLinkData {
+  provider: string; // 'google', 'kakao', 'apple', 'github' 등
+  provider_name?: string;
+  provider_email?: string;
+}
+
+// POST /user/providers/link - 소셜 계정 연동
+export async function linkProvider(data: ProviderLinkData) {
+  return apiCall('/user/providers/link', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// DELETE /user/providers/:provider - 소셜 계정 연동 해제
+export async function unlinkProvider(provider: string) {
+  return apiCall(`/user/providers/${provider}`, {
+    method: 'DELETE',
+  });
+}
+
+// POST /user/providers/disconnect-all - 모든 소셜 계정 연동 해제
+export async function disconnectAllProviders() {
+  return apiCall('/user/providers/disconnect-all', {
+    method: 'POST',
+  });
 }
