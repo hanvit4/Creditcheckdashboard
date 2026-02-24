@@ -11,6 +11,7 @@ interface ProfileTabProps {
   todayEarned?: number;
   nickname?: string;
   email?: string;
+  avatarUrl?: string;
   church?: string;
   onChurchUpdated?: (church: string) => void;
   isDarkMode?: boolean;
@@ -28,6 +29,7 @@ export default function ProfileTab({
   todayEarned = 0,
   nickname = '사용자',
   email = '',
+  avatarUrl = '',
   church = '',
   onChurchUpdated,
   isDarkMode = false,
@@ -40,6 +42,8 @@ export default function ProfileTab({
   canCheckIn = true,
 }: ProfileTabProps) {
   const profileInitial = (nickname?.trim()?.charAt(0) || 'U').toUpperCase();
+  const [isAvatarError, setIsAvatarError] = useState(false);
+  const profileImageSrc = avatarUrl && !isAvatarError ? avatarUrl : '/app-icon.svg';
   const [showChurchRegistration, setShowChurchRegistration] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showTranslationMenu, setShowTranslationMenu] = useState(false);
@@ -336,8 +340,13 @@ export default function ProfileTab({
     <div className="px-4 pt-12 pb-4">
       {/* Profile Header */}
       <div className="text-center mb-6">
-        <div className="w-24 h-24 bg-[#6750a4] rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-white text-4xl font-bold">{profileInitial}</span>
+        <div className="relative w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 bg-[#e8def8]">
+          <img
+            src={profileImageSrc}
+            alt={`${nickname} 프로필 이미지`}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none"
+            onError={() => setIsAvatarError(true)}
+          />
         </div>
         <h1 className="text-[#1d1b20] text-2xl font-bold mb-1">{nickname}님</h1>
         <p className="text-[#49454f] text-sm">{email || '이메일 정보 없음'}</p>
@@ -355,64 +364,6 @@ export default function ProfileTab({
           <span className="credit-text-primary text-sm font-medium">
             오늘 +{todayEarned}C 획득
           </span>
-        </div>
-      </div>
-
-      {/* Check-in Card */}
-      <div className="bg-[#e8def8] rounded-[16px] p-4 shadow-sm mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#6750a4] rounded-full flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-[#1d1b20] font-semibold text-base">출석 체크</h3>
-              <p className="text-[#49454f] text-sm">{consecutiveDays}일 연속 출석 중</p>
-            </div>
-          </div>
-          {canCheckIn ? (
-            <button
-              disabled
-              className="px-4 py-2 bg-[#6750a4] text-white rounded-full text-sm font-medium opacity-70 cursor-not-allowed"
-            >
-              필사하면 체크인
-            </button>
-          ) : (
-            <div className="flex items-center gap-1 text-[#4caf50]">
-              <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">완료</span>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-1">
-          {Array.from({ length: 7 }).map((_, idx) => (
-            <div
-              key={idx}
-              className={`flex-1 h-2 rounded-full ${idx < consecutiveDays ? 'bg-[#6750a4]' : 'bg-[#d0bcff]'
-                }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        {/* Total Verses */}
-        <div className="bg-white rounded-[16px] p-4 shadow-sm">
-          <div className="w-10 h-10 bg-[#e8def8] rounded-full flex items-center justify-center mb-3">
-            <Award className="w-5 h-5 text-[#6750a4]" />
-          </div>
-          <p className="text-[#49454f] text-xs mb-1">필사 완료</p>
-          <p className="text-[#1d1b20] text-2xl font-bold">{totalVersesCompleted}절</p>
-        </div>
-
-        {/* Consecutive Days */}
-        <div className="bg-white rounded-[16px] p-4 shadow-sm">
-          <div className="w-10 h-10 bg-[#e8def8] rounded-full flex items-center justify-center mb-3">
-            <Calendar className="w-5 h-5 text-[#6750a4]" />
-          </div>
-          <p className="text-[#49454f] text-xs mb-1">연속 출석</p>
-          <p className="text-[#1d1b20] text-2xl font-bold">{consecutiveDays}일</p>
         </div>
       </div>
 

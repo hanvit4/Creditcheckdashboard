@@ -425,6 +425,7 @@ export default function App() {
           todayEarned={todayEarned}
           nickname={nickname}
           email={user?.email || ''}
+          avatarUrl={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''}
           church={church}
           onChurchUpdated={setChurch}
           isDarkMode={isDarkMode}
@@ -452,8 +453,18 @@ export default function App() {
               <p className="text-[#49454f] text-sm">안녕하세요!</p>
               <h1 className="text-[#1d1b20] text-2xl mt-1">{nickname}님</h1>
             </div>
-            <div className="w-10 h-10 bg-[#6750a4] rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">{nickname.charAt(0).toUpperCase()}</span>
+            <div className="relative w-10 h-10 bg-[#e8def8] rounded-full overflow-hidden">
+              <img
+                src={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || '/app-icon.svg'}
+                alt={`${nickname} 프로필 이미지`}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none"
+                onError={(event) => {
+                  const target = event.currentTarget;
+                  if (!target.src.endsWith('/app-icon.svg')) {
+                    target.src = '/app-icon.svg';
+                  }
+                }}
+              />
             </div>
           </div>
 
@@ -654,55 +665,57 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fef7ff]">
-      {/* Container for Galaxy S24 */}
-      <div className="max-w-[360px] mx-auto pb-24">
-        {renderContent()}
+    <div className="min-h-screen bg-[#fef7ff] flex flex-col">
+      {/* Content Area - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[360px] mx-auto pb-6">
+          {renderContent()}
+        </div>
+      </div>
 
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#fffbfe] border-t border-[#e7e0ec]">
-          <div className="max-w-[360px] mx-auto">
-            <nav className="grid grid-cols-3 h-20 px-2">
-              <button
-                onClick={() => handleTabChange('home')}
-                className={`flex flex-col items-center justify-center gap-1 transition-colors rounded-[16px] ${activeTab === 'home' ? 'bg-[#e8def8]' : ''
-                  }`}
-              >
-                <div className={`p-1 rounded-[16px] ${activeTab === 'home' ? 'bg-[#6750a4]' : ''}`}>
-                  <Home className={`w-6 h-6 ${activeTab === 'home' ? 'text-white' : 'text-[#49454f]'}`} />
-                </div>
-                <span className={`text-xs font-medium ${activeTab === 'home' ? 'text-[#1d1b20]' : 'text-[#49454f]'}`}>
-                  홈
-                </span>
-              </button>
+      {/* Bottom Navigation - Sticky */}
+      <div className="sticky bottom-0 left-0 right-0 z-50 bg-[#fffbfe] border-t border-[#e7e0ec] shrink-0">
+        <div className="max-w-[360px] mx-auto">
+          <nav className="grid grid-cols-3 h-20 px-2">
+            <button
+              onClick={() => handleTabChange('home')}
+              className={`flex flex-col items-center justify-center gap-1 transition-colors rounded-[16px] ${activeTab === 'home' ? 'bg-[#e8def8]' : ''
+                }`}
+            >
+              <div className={`p-1 rounded-[16px] ${activeTab === 'home' ? 'bg-[#6750a4]' : ''}`}>
+                <Home className={`w-6 h-6 ${activeTab === 'home' ? 'text-white' : 'text-[#49454f]'}`} />
+              </div>
+              <span className={`text-xs font-medium ${activeTab === 'home' ? 'text-[#1d1b20]' : 'text-[#49454f]'}`}>
+                홈
+              </span>
+            </button>
 
-              <button
-                onClick={() => handleTabChange('bible')}
-                className={`flex flex-col items-center justify-center gap-1 transition-colors rounded-[16px] ${activeTab === 'bible' ? 'bg-[#e8def8]' : ''
-                  }`}
-              >
-                <div className={`p-1 rounded-[16px] ${activeTab === 'bible' ? 'bg-[#6750a4]' : ''}`}>
-                  <Book className={`w-6 h-6 ${activeTab === 'bible' ? 'text-white' : 'text-[#49454f]'}`} />
-                </div>
-                <span className={`text-xs font-medium ${activeTab === 'bible' ? 'text-[#1d1b20]' : 'text-[#49454f]'}`}>
-                  성경
-                </span>
-              </button>
+            <button
+              onClick={() => handleTabChange('bible')}
+              className={`flex flex-col items-center justify-center gap-1 transition-colors rounded-[16px] ${activeTab === 'bible' ? 'bg-[#e8def8]' : ''
+                }`}
+            >
+              <div className={`p-1 rounded-[16px] ${activeTab === 'bible' ? 'bg-[#6750a4]' : ''}`}>
+                <Book className={`w-6 h-6 ${activeTab === 'bible' ? 'text-white' : 'text-[#49454f]'}`} />
+              </div>
+              <span className={`text-xs font-medium ${activeTab === 'bible' ? 'text-[#1d1b20]' : 'text-[#49454f]'}`}>
+                성경
+              </span>
+            </button>
 
-              <button
-                onClick={() => handleTabChange('profile')}
-                className={`flex flex-col items-center justify-center gap-1 transition-colors rounded-[16px] ${activeTab === 'profile' ? 'bg-[#e8def8]' : ''
-                  }`}
-              >
-                <div className={`p-1 rounded-[16px] ${activeTab === 'profile' ? 'bg-[#6750a4]' : ''}`}>
-                  <User className={`w-6 h-6 ${activeTab === 'profile' ? 'text-white' : 'text-[#49454f]'}`} />
-                </div>
-                <span className={`text-xs font-medium ${activeTab === 'profile' ? 'text-[#1d1b20]' : 'text-[#49454f]'}`}>
-                  내 정보
-                </span>
-              </button>
-            </nav>
-          </div>
+            <button
+              onClick={() => handleTabChange('profile')}
+              className={`flex flex-col items-center justify-center gap-1 transition-colors rounded-[16px] ${activeTab === 'profile' ? 'bg-[#e8def8]' : ''
+                }`}
+            >
+              <div className={`p-1 rounded-[16px] ${activeTab === 'profile' ? 'bg-[#6750a4]' : ''}`}>
+                <User className={`w-6 h-6 ${activeTab === 'profile' ? 'text-white' : 'text-[#49454f]'}`} />
+              </div>
+              <span className={`text-xs font-medium ${activeTab === 'profile' ? 'text-[#1d1b20]' : 'text-[#49454f]'}`}>
+                내 정보
+              </span>
+            </button>
+          </nav>
         </div>
       </div>
     </div>

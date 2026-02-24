@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Book, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Book, ChevronRight } from 'lucide-react';
 import ChapterSelect from './ChapterSelect';
 import BibleReader from './BibleReader';
 import { BibleTranslation } from '../utils/api';
@@ -23,8 +23,35 @@ const bibleBooks: BibleBook[] = [
   { id: 'ruth', name: '룻기', chapters: 4, testament: 'old' },
   { id: '1samuel', name: '사무엘상', chapters: 31, testament: 'old' },
   { id: '2samuel', name: '사무엘하', chapters: 24, testament: 'old' },
+  { id: '1kings', name: '열왕기상', chapters: 22, testament: 'old' },
+  { id: '2kings', name: '열왕기하', chapters: 25, testament: 'old' },
+  { id: '1chronicles', name: '역대상', chapters: 29, testament: 'old' },
+  { id: '2chronicles', name: '역대하', chapters: 36, testament: 'old' },
+  { id: 'ezra', name: '에스라', chapters: 10, testament: 'old' },
+  { id: 'nehemiah', name: '느헤미야', chapters: 13, testament: 'old' },
+  { id: 'esther', name: '에스더', chapters: 10, testament: 'old' },
+  { id: 'job', name: '욥기', chapters: 42, testament: 'old' },
   { id: 'psalms', name: '시편', chapters: 150, testament: 'old' },
   { id: 'proverbs', name: '잠언', chapters: 31, testament: 'old' },
+  { id: 'ecclesiastes', name: '전도서', chapters: 12, testament: 'old' },
+  { id: 'songofsolomon', name: '아가', chapters: 8, testament: 'old' },
+  { id: 'isaiah', name: '이사야', chapters: 66, testament: 'old' },
+  { id: 'jeremiah', name: '예레미야', chapters: 52, testament: 'old' },
+  { id: 'lamentations', name: '예레미야애가', chapters: 5, testament: 'old' },
+  { id: 'ezekiel', name: '에스겔', chapters: 48, testament: 'old' },
+  { id: 'daniel', name: '다니엘', chapters: 12, testament: 'old' },
+  { id: 'hosea', name: '호세아', chapters: 14, testament: 'old' },
+  { id: 'joel', name: '요엘', chapters: 3, testament: 'old' },
+  { id: 'amos', name: '아모스', chapters: 9, testament: 'old' },
+  { id: 'obadiah', name: '오바댜', chapters: 1, testament: 'old' },
+  { id: 'jonah', name: '요나', chapters: 4, testament: 'old' },
+  { id: 'micah', name: '미가', chapters: 7, testament: 'old' },
+  { id: 'nahum', name: '나훔', chapters: 3, testament: 'old' },
+  { id: 'habakkuk', name: '하박국', chapters: 3, testament: 'old' },
+  { id: 'zephaniah', name: '스바냐', chapters: 3, testament: 'old' },
+  { id: 'haggai', name: '학개', chapters: 2, testament: 'old' },
+  { id: 'zechariah', name: '스가랴', chapters: 14, testament: 'old' },
+  { id: 'malachi', name: '말라기', chapters: 4, testament: 'old' },
   // 신약
   { id: 'matthew', name: '마태복음', chapters: 28, testament: 'new' },
   { id: 'mark', name: '마가복음', chapters: 16, testament: 'new' },
@@ -37,6 +64,21 @@ const bibleBooks: BibleBook[] = [
   { id: 'galatians', name: '갈라디아서', chapters: 6, testament: 'new' },
   { id: 'ephesians', name: '에베소서', chapters: 6, testament: 'new' },
   { id: 'philippians', name: '빌립보서', chapters: 4, testament: 'new' },
+  { id: 'colossians', name: '골로새서', chapters: 4, testament: 'new' },
+  { id: '1thessalonians', name: '데살로니가전서', chapters: 5, testament: 'new' },
+  { id: '2thessalonians', name: '데살로니가후서', chapters: 3, testament: 'new' },
+  { id: '1timothy', name: '디모데전서', chapters: 6, testament: 'new' },
+  { id: '2timothy', name: '디모데후서', chapters: 4, testament: 'new' },
+  { id: 'titus', name: '디도서', chapters: 3, testament: 'new' },
+  { id: 'philemon', name: '빌레몬서', chapters: 1, testament: 'new' },
+  { id: 'hebrews', name: '히브리서', chapters: 13, testament: 'new' },
+  { id: 'james', name: '야고보서', chapters: 5, testament: 'new' },
+  { id: '1peter', name: '베드로전서', chapters: 5, testament: 'new' },
+  { id: '2peter', name: '베드로후서', chapters: 3, testament: 'new' },
+  { id: '1john', name: '요한일서', chapters: 5, testament: 'new' },
+  { id: '2john', name: '요한이서', chapters: 1, testament: 'new' },
+  { id: '3john', name: '요한삼서', chapters: 1, testament: 'new' },
+  { id: 'jude', name: '유다서', chapters: 1, testament: 'new' },
   { id: 'revelation', name: '요한계시록', chapters: 22, testament: 'new' },
 ];
 
@@ -173,40 +215,31 @@ export default function BibleTab({ translation, onChangeTranslation }: BibleTabP
         </div>
       </div>
 
-      {/* Books List */}
-      <div className="space-y-2">
+      {/* Books Grid */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {filteredBooks.map((book) => {
           const isInProgress = book.id === 'genesis'; // Mock: 창세기 진행 중
           const completedCount = book.id === 'genesis' ? 1 : 0;
+          const progressLabel = `${completedCount}/${book.chapters}`;
 
           return (
             <button
               key={book.id}
               onClick={() => handleSelectBook(book)}
-              className="w-full bg-white rounded-[16px] p-4 shadow-sm transition-all active:scale-98 hover:shadow-md text-left"
+              className={`w-full rounded-[18px] p-3 shadow-sm transition-all active:scale-98 hover:shadow-md text-center border ${isInProgress
+                ? 'border-[#6750a4] bg-[#fef7ff]'
+                : 'border-[#e7e0ec] bg-white'
+                }`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-[#1d1b20] font-medium text-base">
-                      {book.name}
-                    </h3>
-                    {isInProgress && (
-                      <span className="px-2 py-0.5 bg-[#e8def8] text-[#6750a4] text-xs font-medium rounded-full">
-                        진행 중
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[#49454f] text-sm">
-                    총 {book.chapters}장
-                    {completedCount > 0 && (
-                      <span className="text-[#6750a4] ml-2">
-                        · {completedCount}장 완료
-                      </span>
-                    )}
-                  </p>
+              <div className="flex flex-col items-center justify-center gap-1">
+                <h3 className="text-[#1d1b20] font-medium text-sm truncate w-full">
+                  {book.name}
+                </h3>
+                <div className="text-[#49454f] text-xs">
+                  <span className={`font-semibold ${isInProgress ? 'text-[#6750a4]' : 'text-[#1d1b20]'}`}>
+                    {progressLabel}
+                  </span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#49454f]" />
               </div>
             </button>
           );
