@@ -55,23 +55,54 @@ async function verifyAuth(c: any, next: any) {
 
 // Health check endpoint
 app.get(route("/health"), (c) => {
+  console.log('Health check requested');
   return c.json({ status: "ok" });
+});
+
+// Debug endpoint to check routes
+app.get(route("/debug"), (c) => {
+  console.log('Debug endpoint hit');
+  return c.json({ 
+    message: "Debug endpoint working",
+    prefix: ROUTE_PREFIX,
+    path: c.req.path
+  });
 });
 
 // Get user profile
 app.get(route("/user/profile"), verifyAuth, async (c) => {
+  console.log('User profile endpoint hit');
   try {
     const authUserId = c.get('userId');
+    console.log('Auth user ID:', authUserId);
 
-    // users 테이블에서 프로필 조회
+    // users 테이블에서 프로필 조회 (church는 user_church_memberships에서 관리)
     const { data: userRecord, error } = await supabase.from('users')
-      .select('id, email, name, avatar_url, provider, church, created_at')
+      .select('id, email, name, avatar_url, provider, created_at')
       .eq('auth_user_id', authUserId)
-      .single();
+      .maybeSingle();
 
-    if (error || !userRecord) {
-      console.error('User record not found:', error);
-      return c.json({ error: 'User profile not found' }, 404);
+    if (error) {
+      console.error('Database error fetching user:', error);
+      return c.json({ error: 'Database error', details: error.message }, 500);
+    }
+
+    if (!userRecord) {
+      console.warn('User record not found for auth_user_id:', authUserId);
+      // Create a default profile if not found
+      return c.json({ 
+        profile: {
+          userId: null,
+          email: 'unknown@example.com',
+          name: 'User',
+          avatarUrl: null,
+          provider: 'unknown',
+          church: '',
+          creditsEarned: 0,
+          creditsSpent: 0,
+          createdAt: new Date().toISOString(),
+        } 
+      });
     }
 
     // daily_credits에서 전체 크레딧 합계 조회
@@ -115,14 +146,13 @@ app.post(route("/user/profile"), verifyAuth, async (c) => {
   try {
     const authUserId = c.get('userId');
     const body = await c.req.json();
-    const { name, avatarUrl, church } = body;
+    const { name, avatarUrl } = body;
 
-    // users 테이블 업데이트
+    // users 테이블 업데이트 (church는 user_church_memberships에서 관리)
     const { data: updated, error } = await supabase.from('users')
       .update({
         name: name || undefined,
         avatar_url: avatarUrl || undefined,
-        church: typeof church === 'string' ? church.trim() : undefined,
         updated_at: new Date().toISOString(),
       })
       .eq('auth_user_id', authUserId)

@@ -74,7 +74,10 @@ async function apiCall(endpoint: string, options: RequestInit = {}, requireAuth:
     console.log('API Call (no auth):', endpoint);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  console.log('Full URL:', fullUrl);
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
@@ -92,6 +95,24 @@ async function apiCall(endpoint: string, options: RequestInit = {}, requireAuth:
 // User Profile APIs
 export async function getUserProfile() {
   return apiCall('/user/profile');
+}
+
+export async function ensureUserProfile(email: string, name?: string) {
+  try {
+    // Try to get existing profile first
+    const existingProfile = await getUserProfile();
+    return existingProfile;
+  } catch (error) {
+    // If profile doesn't exist, create it
+    console.log('User profile not found, creating new one...');
+    return apiCall('/user/profile', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        name: name || email.split('@')[0],
+      }),
+    });
+  }
 }
 
 export async function updateUserProfile(data: {
