@@ -77,6 +77,7 @@ export async function getUserProfile() {
 export async function updateUserProfile(data: {
   name?: string;
   avatarUrl?: string;
+  church?: string;
 }) {
   return apiCall('/user/profile', {
     method: 'POST',
@@ -231,4 +232,66 @@ export async function checkServiceEmailDuplicate(serviceEmail: string) {
     console.error('Exception in checkServiceEmailDuplicate:', err);
     throw err;
   }
+}
+
+// ===================================
+// Church APIs
+// ===================================
+
+export interface ChurchItem {
+  id: string;
+  churchCode?: string;
+  name: string;
+  address: string;
+  city: string;
+  district?: string;
+  phone?: string;
+  memberCount: number;
+  pastor?: string;
+  denomination?: string;
+}
+
+export interface ChurchMembershipItem {
+  id: string;
+  isPrimary: boolean;
+  status: 'approved' | 'pending' | 'rejected' | string;
+  joinedAt: string;
+  church: ChurchItem;
+}
+
+export async function getChurches(params?: { search?: string; city?: string }) {
+  const query = new URLSearchParams();
+  if (params?.search) query.set('search', params.search);
+  if (params?.city) query.set('city', params.city);
+  const qs = query.toString();
+  return apiCall(`/churches${qs ? `?${qs}` : ''}`) as Promise<{ churches: ChurchItem[] }>;
+}
+
+export async function getMyChurchMemberships() {
+  return apiCall('/user/church-memberships') as Promise<{ memberships: ChurchMembershipItem[] }>;
+}
+
+export async function registerMyChurch(data: {
+  churchId?: string;
+  churchCode?: string;
+  manualChurch?: {
+    name: string;
+    address: string;
+    city?: string;
+    district?: string;
+    phone?: string;
+    pastor?: string;
+    denomination?: string;
+  };
+}) {
+  return apiCall('/user/church-memberships', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }) as Promise<{ membership: ChurchMembershipItem }>;
+}
+
+export async function removeMyChurchMembership(membershipId: string) {
+  return apiCall(`/user/church-memberships/${membershipId}`, {
+    method: 'DELETE',
+  }) as Promise<{ status: string }>;
 }

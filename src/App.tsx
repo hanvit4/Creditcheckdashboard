@@ -8,12 +8,16 @@ import EasyTyping from './components/EasyTyping';
 import ExpertTyping from './components/ExpertTyping';
 import LoginScreen from './components/LoginScreen';
 import SetServiceEmailScreen from './components/SetServiceEmailScreen';
+import SocialLinkOnboarding from './components/SocialLinkOnboarding';
+import ChurchOnboarding, { ChurchData } from './components/ChurchOnboarding';
 import AdBanner from './components/AdBanner';
 import { supabase } from './utils/supabase/client';
 import * as api from './utils/api';
 import { toast } from 'sonner';
 
 const GLOBAL_LINK_ERROR_KEY = 'social_link_error_notice';
+const CHURCH_ONBOARDING_DONE_KEY_PREFIX = 'church_onboarding_done_';
+const THEME_MODE_KEY = 'theme_mode';
 
 interface GlobalLinkErrorNotice {
   message: string;
@@ -22,6 +26,8 @@ interface GlobalLinkErrorNotice {
 }
 
 export default function App() {
+  const [onboardingStep, setOnboardingStep] = useState<'none' | 'social-link' | 'church'>('none');
+  const [socialLinkSource, setSocialLinkSource] = useState<'onboarding' | 'profile'>('onboarding');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -43,6 +49,32 @@ export default function App() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const stored = localStorage.getItem(THEME_MODE_KEY);
+    if (stored === 'dark') return true;
+    if (stored === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  const isChurchOnboardingDone = (authUserId: string) => {
+    return localStorage.getItem(`${CHURCH_ONBOARDING_DONE_KEY_PREFIX}${authUserId}`) === '1';
+  };
+
+  const markChurchOnboardingDone = (authUserId?: string) => {
+    if (!authUserId) return;
+    localStorage.setItem(`${CHURCH_ONBOARDING_DONE_KEY_PREFIX}${authUserId}`, '1');
+  };
+
+  const shouldShowChurchOnboarding = (profile: any, authUserId?: string) => {
+    if (!authUserId) return false;
+    if (profile?.church) return false;
+    return !isChurchOnboardingDone(authUserId);
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem(THEME_MODE_KEY, isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   // Load user data from API
   const loadUserData = async () => {
@@ -52,6 +84,7 @@ export default function App() {
       console.log('Profile loaded:', profileRes.profile);
       setCredits(profileRes.profile.creditsEarned || 0);
       setNickname(profileRes.profile.name || user?.user_metadata?.name || user?.email?.split('@')[0] || '사용자');
+      setChurch(profileRes.profile.church || '');
 
       // Load today's stats (로컬 날짜 기준)
       const now = new Date();
@@ -113,8 +146,16 @@ export default function App() {
           if (!profile?.service_email) {
             console.log('⚠️ service_email 미설정, 입력 화면 표시');
             setNeedsServiceEmail(true);
+            setOnboardingStep('none');
           } else {
-            loadUserData();
+            setNeedsServiceEmail(false);
+            if (shouldShowChurchOnboarding(profile, session.user.id)) {
+              setSocialLinkSource('onboarding');
+              setOnboardingStep('social-link');
+            } else {
+              setOnboardingStep('none');
+              loadUserData();
+            }
           }
         });
       }
@@ -133,8 +174,16 @@ export default function App() {
           if (!profile?.service_email) {
             console.log('⚠️ service_email 미설정, 입력 화면 표시');
             setNeedsServiceEmail(true);
+            setOnboardingStep('none');
           } else {
-            loadUserData();
+            setNeedsServiceEmail(false);
+            if (shouldShowChurchOnboarding(profile, session.user.id)) {
+              setSocialLinkSource('onboarding');
+              setOnboardingStep('social-link');
+            } else {
+              setOnboardingStep('none');
+              loadUserData();
+            }
           }
         });
       }
@@ -176,12 +225,76 @@ export default function App() {
       <SetServiceEmailScreen
         onEmailSet={() => {
           setNeedsServiceEmail(false);
-          loadUserData();
+          setSocialLinkSource('onboarding');
+          setOnboardingStep('social-link');
         }}
         onCancel={() => {
           setIsLoggedIn(false);
           setUser(null);
           setNeedsServiceEmail(false);
+          setOnboardingStep('none');
+        }}
+      />
+    );
+  }
+
+  if (isLoggedIn && onboardingStep === 'social-link') {
+    return (
+      <SocialLinkOnboarding
+        mode={socialLinkSource === 'profile' ? 'manage' : 'onboarding'}
+        onBack={socialLinkSource === 'profile'
+          ? () => {
+            setOnboardingStep('none');
+            setSocialLinkSource('onboarding');
+            setActiveTab('profile');
+            setCurrentScreen('home');
+          }
+          : undefined}
+        onNext={() => {
+          if (socialLinkSource === 'profile') {
+            setOnboardingStep('none');
+            setSocialLinkSource('onboarding');
+            setActiveTab('profile');
+            setCurrentScreen('home');
+            return;
+          }
+
+          setOnboardingStep('church');
+        }}
+      />
+    );
+  }
+
+  if (isLoggedIn && onboardingStep === 'church') {
+    return (
+      <ChurchOnboarding
+        onComplete={async (hasChurch: boolean, selectedChurch?: ChurchData) => {
+          if (!hasChurch) {
+            markChurchOnboardingDone(user?.id);
+            setOnboardingStep('none');
+            await loadUserData();
+            toast.success('가입이 완료되었습니다.');
+            return;
+          }
+
+          const churchId = selectedChurch?.id;
+          if (!churchId) {
+            toast.error('교회를 선택해주세요.');
+            return;
+          }
+
+          try {
+            const res = await api.registerMyChurch({ churchId });
+            const churchName = res.membership?.church?.name || selectedChurch?.name || '';
+            setChurch(churchName);
+            markChurchOnboardingDone(user?.id);
+            setOnboardingStep('none');
+            await loadUserData();
+            toast.success('교회 등록이 완료되었습니다.');
+          } catch (error) {
+            console.error('교회 등록 저장 실패:', error);
+            toast.error('교회 등록 저장에 실패했습니다. 다시 시도해주세요.');
+          }
         }}
       />
     );
@@ -292,6 +405,13 @@ export default function App() {
           nickname={nickname}
           email={user?.email || ''}
           church={church}
+          onChurchUpdated={setChurch}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+          onOpenSocialLink={() => {
+            setSocialLinkSource('profile');
+            setOnboardingStep('social-link');
+          }}
           totalVersesCompleted={totalVersesCompleted}
           consecutiveDays={consecutiveDays}
           canCheckIn={canCheckIn}
@@ -513,11 +633,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#fef7ff]">
       {/* Container for Galaxy S24 */}
-      <div className="max-w-[360px] mx-auto pb-20">
+      <div className="max-w-[360px] mx-auto pb-24">
         {renderContent()}
 
         {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-[#fffbfe] border-t border-[#e7e0ec]">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#fffbfe] border-t border-[#e7e0ec]">
           <div className="max-w-[360px] mx-auto">
             <nav className="grid grid-cols-3 h-20 px-2">
               <button

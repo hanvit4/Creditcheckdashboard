@@ -1,0 +1,169 @@
+:root {
+    --app-bg: #fef7ff;
+    --app-surface: #ffffff;
+    --app-surface-soft: #f5f5f5;
+    --app-accent-surface: #e8def8;
+    --app-accent-muted: #d0bcff;
+    --app-primary: #6750a4;
+    --app-primary-strong: #5d4595;
+    --app-primary-grad-end: #7965af;
+    --app-primary-grad-end-2: #7f67be;
+    --app-text: #1d1b20;
+    --app-text-muted: #49454f;
+    --app-text-subtle: #79747e;
+    --app-danger: #ba1a1a;
+    --app-border: #e7e0ec;
+    --app-border-soft: #f1edf4;
+}
+
+html:not(.dark) {
+    --app-bg: #fef7ff;
+    --app-surface: #ffffff;
+    --app-surface-soft: #f5f5f5;
+    --app-accent-surface: #e8def8;
+    --app-accent-muted: #d0bcff;
+    --app-primary: #6750a4;
+    --app-primary-strong: #5d4595;
+    --app-primary-grad-end: #7965af;
+    --app-primary-grad-end-2: #7f67be;
+    --app-text: #1d1b20;
+    --app-text-muted: #49454f;
+    --app-text-subtle: #79747e;
+    --app-danger: #ba1a1a;
+    --app-border: #e7e0ec;
+    --app-border-soft: #f1edf4;
+}
+
+html.dark {
+    --app-bg: #121318;
+    --app-surface: #1b1d24;
+    --app-surface-soft: #262a33;
+    --app-accent-surface: #2f2a3f;
+    --app-accent-muted: #4b3d70;
+    --app-primary: #8b75c9;
+    --app-primary-strong: #7b66b8;
+    --app-primary-grad-end: #6d5ba3;
+    --app-primary-grad-end-2: #645490;
+    --app-text: #f5f6f7;
+    --app-text-muted: #c9ced8;
+    --app-text-subtle: #aeb4bf;
+    --app-danger: #ff8e8e;
+    --app-border: #343746;
+    --app-border-soft: #343746;
+}
+
+body {
+    background-color: var(--app-bg);
+    color: var(--app-text);
+}
+
+.bg-\[\#fef7ff\] {
+    background-color: var(--app-bg) !important;
+}
+
+.bg-white {
+    background-color: var(--app-surface) !important;
+}
+
+.bg-\[\#fffbfe\] {
+    background-color: var(--app-surface) !important;
+}
+
+.bg-\[\#f5f5f5\] {
+    background-color: var(--app-surface-soft) !important;
+}
+
+.bg-\[\#e8def8\] {
+    background-color: var(--app-accent-surface) !important;
+}
+
+.bg-\[\#d0bcff\] {
+    background-color: var(--app-accent-muted) !important;
+}
+
+.bg-\[\#6750a4\] {
+    background-color: var(--app-primary) !important;
+}
+
+.text-\[\#1d1b20\] {
+    color: var(--app-text) !important;
+}
+
+.text-\[\#49454f\] {
+    color: var(--app-text-muted) !important;
+}
+
+.text-\[\#79747e\] {
+    color: var(--app-text-subtle) !important;
+}
+
+.text-\[\#6750a4\] {
+    color: var(--app-primary) !important;
+}
+
+.text-\[\#ba1a1a\] {
+    color: var(--app-danger) !important;
+}
+
+.border-\[\#e7e0ec\],
+.border-\[\#f1edf4\] {
+    border-color: var(--app-border) !important;
+}
+
+.hover\:bg-\[\#f5f5f5\]:hover {
+    background-color: var(--app-surface-soft) !important;
+}
+
+.hover\:bg-\[\#e8def8\]:hover {
+    background-color: var(--app-accent-surface) !important;
+}
+
+.hover\:bg-\[\#d0bcff\]:hover {
+    background-color: var(--app-accent-muted) !important;
+}
+
+.active\:bg-\[\#e8e8e8\]:active {
+    background-color: var(--app-surface-soft) !important;
+}
+
+.hover\:bg-\[\#5d4595\]:hover {
+    background-color: var(--app-primary-strong) !important;
+}
+
+.to-white {
+    --tw-gradient-to: var(--app-surface) var(--tw-gradient-to-position) !important;
+}
+
+.from-\[\#fef7ff\] {
+    --tw-gradient-from: var(--app-bg) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in srgb, var(--app-bg) 0%, transparent) var(--tw-gradient-to-position) !important;
+}
+
+.from-\[\#6750a4\] {
+    --tw-gradient-from: var(--app-primary) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in srgb, var(--app-primary) 0%, transparent) var(--tw-gradient-to-position) !important;
+}
+
+.to-\[\#7965af\] {
+    --tw-gradient-to: var(--app-primary-grad-end) var(--tw-gradient-to-position) !important;
+}
+
+.to-\[\#7f67be\] {
+    --tw-gradient-to: var(--app-primary-grad-end-2) var(--tw-gradient-to-position) !important;
+}
+
+html:not(.dark) .credit-text-primary {
+    color: #000 !important;
+}
+
+html:not(.dark) .credit-text-secondary {
+    color: rgba(0, 0, 0, 0.9) !important;
+}
+
+html.dark .credit-text-primary {
+    color: #ede7ff !important;
+}
+
+html.dark .credit-text-secondary {
+    color: #d3c8f3 !important;
+}

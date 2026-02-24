@@ -1,7 +1,10 @@
-import { User, Award, Calendar, TrendingUp, Settings, LogOut, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Award, Calendar, TrendingUp, Settings, LogOut, CheckCircle2, Link2, ChevronRight } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
-import LinkedProviders from './LinkedProviders';
+import * as api from '../utils/api';
 import AdBanner from './AdBanner';
+import { toast } from 'sonner';
+import ChurchRegistration, { Church } from './ChurchRegistration';
 
 interface ProfileTabProps {
   credits?: number;
@@ -9,6 +12,10 @@ interface ProfileTabProps {
   nickname?: string;
   email?: string;
   church?: string;
+  onChurchUpdated?: (church: string) => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
+  onOpenSocialLink?: () => void;
   totalVersesCompleted?: number;
   consecutiveDays?: number;
   canCheckIn?: boolean;
@@ -20,11 +27,22 @@ export default function ProfileTab({
   nickname = '사용자',
   email = '',
   church = '',
+  onChurchUpdated,
+  isDarkMode = false,
+  onToggleDarkMode,
+  onOpenSocialLink,
   totalVersesCompleted = 0,
   consecutiveDays = 0,
   canCheckIn = true,
 }: ProfileTabProps) {
   const profileInitial = (nickname?.trim()?.charAt(0) || 'U').toUpperCase();
+  const [showChurchRegistration, setShowChurchRegistration] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [isSavingChurch, setIsSavingChurch] = useState(false);
+
+  useEffect(() => {
+    // reserved for church-related state sync
+  }, [church]);
 
   const handleLogout = async () => {
     try {
@@ -37,6 +55,91 @@ export default function ProfileTab({
       alert('로그아웃 중 오류가 발생했습니다.');
     }
   };
+
+  const handleChurchComplete = async (selectedChurch: Church) => {
+    const trimmed = selectedChurch.name.trim();
+    setIsSavingChurch(true);
+    onChurchUpdated?.(trimmed);
+    setShowChurchRegistration(false);
+    setIsSavingChurch(false);
+    toast.success('소속 교회가 반영되었습니다.');
+  };
+
+  if (showChurchRegistration) {
+    const currentChurches: Church[] = church
+      ? [{
+        id: 'current',
+        name: church,
+        address: '등록된 주소 없음',
+        city: '기타',
+        district: '-',
+        phone: '-',
+        memberCount: 0,
+        pastor: '-',
+        denomination: '-',
+      }]
+      : [];
+
+    return (
+      <ChurchRegistration
+        onBack={() => setShowChurchRegistration(false)}
+        onComplete={handleChurchComplete}
+        currentChurches={currentChurches}
+      />
+    );
+  }
+
+  if (showSettingsMenu) {
+    return (
+      <div className="min-h-screen bg-[#fef7ff]">
+        <div className="max-w-[360px] mx-auto w-full min-h-screen bg-white flex flex-col">
+          <div className="sticky top-0 z-10 bg-white border-b border-[#e7e0ec]">
+            <div className="flex items-center px-4 h-14">
+              <button
+                onClick={() => setShowSettingsMenu(false)}
+                className="p-2 -ml-2 hover:bg-[#f5f5f5] rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6 text-[#1d1b20]" />
+              </button>
+              <h1 className="flex-1 text-[#1d1b20] text-lg font-semibold ml-2">설정</h1>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <div className="bg-white rounded-[16px] shadow-sm divide-y divide-[#e7e0ec] border border-[#f1edf4]">
+              <button
+                onClick={onToggleDarkMode}
+                className="w-full flex items-center justify-between p-4 hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8] first:rounded-t-[16px]"
+              >
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-[#49454f]" />
+                  <span className="text-[#1d1b20] font-medium text-base">다크 모드</span>
+                </div>
+                <div
+                  className={`w-11 h-6 rounded-full transition-colors ${isDarkMode ? 'bg-[#6750a4]' : 'bg-[#d0bcff]'}`}
+                >
+                  <div
+                    className={`w-5 h-5 mt-0.5 rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-5' : 'translate-x-0.5'}`}
+                  />
+                </div>
+              </button>
+
+              <button
+                onClick={onOpenSocialLink}
+                className="w-full flex items-center justify-between p-4 hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8]"
+              >
+                <div className="flex items-center gap-3">
+                  <Link2 className="w-5 h-5 text-[#49454f]" />
+                  <span className="text-[#1d1b20] font-medium text-base">소셜 계정 연동</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-[#79747e]" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 pt-12 pb-4">
@@ -52,13 +155,13 @@ export default function ProfileTab({
       {/* Credit Card */}
       <div className="bg-gradient-to-br from-[#6750a4] to-[#7965af] rounded-[20px] p-6 shadow-lg mb-4">
         <div className="flex items-baseline justify-center mb-2">
-          <span className="text-white text-5xl font-bold">{credits.toLocaleString()}</span>
-          <span className="text-white/80 text-2xl ml-2">C</span>
+          <span className="credit-text-primary text-5xl font-bold">{credits.toLocaleString()}</span>
+          <span className="credit-text-secondary text-2xl ml-2">C</span>
         </div>
-        <p className="text-white/90 text-sm text-center mb-4">내 크레딧</p>
+        <p className="credit-text-secondary text-sm text-center mb-4">내 크레딧</p>
         <div className="flex items-center justify-center gap-2 bg-white/20 rounded-full px-4 py-2 backdrop-blur-sm">
-          <TrendingUp className="w-4 h-4 text-white" />
-          <span className="text-white text-sm font-medium">
+          <TrendingUp className="w-4 h-4 credit-text-primary" />
+          <span className="credit-text-primary text-sm font-medium">
             오늘 +{todayEarned}C 획득
           </span>
         </div>
@@ -131,24 +234,27 @@ export default function ProfileTab({
             </h3>
             <p className="text-[#49454f] text-sm">{church || '등록된 교회가 없습니다'}</p>
           </div>
-          <button className="px-4 py-2 bg-[#e8def8] text-[#6750a4] rounded-full text-sm font-medium hover:bg-[#d0bcff] transition-all active:scale-95">
-            등록하기
+          <button
+            onClick={() => setShowChurchRegistration(true)}
+            disabled={isSavingChurch}
+            className="px-4 py-2 bg-[#e8def8] text-[#6750a4] rounded-full text-sm font-medium hover:bg-[#d0bcff] transition-all active:scale-95 disabled:opacity-60"
+          >
+            {church ? '관리하기' : '등록하기'}
           </button>
         </div>
       </div>
 
-      {/* Linked Providers Card */}
-      <div className="mb-4">
-        <LinkedProviders />
-      </div>
-
       {/* Menu List */}
       <div className="bg-white rounded-[16px] shadow-sm divide-y divide-[#e7e0ec] mb-4">
-        <button className="w-full flex items-center justify-between p-4 hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8] first:rounded-t-[16px]">
+        <button
+          onClick={() => setShowSettingsMenu(true)}
+          className="w-full flex items-center justify-between p-4 hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8] first:rounded-t-[16px]"
+        >
           <div className="flex items-center gap-3">
             <Settings className="w-5 h-5 text-[#49454f]" />
             <span className="text-[#1d1b20] font-medium text-base">설정</span>
           </div>
+          <ChevronRight className="w-5 h-5 text-[#79747e]" />
         </button>
 
         <button className="w-full flex items-center justify-between p-4 hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8]">
