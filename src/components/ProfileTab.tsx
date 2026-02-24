@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Award, Calendar, TrendingUp, Settings, LogOut, CheckCircle2, Link2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Award, Calendar, TrendingUp, Settings, LogOut, CheckCircle2, Link2, ChevronRight, Bell } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
 import * as api from '../utils/api';
 import AdBanner from './AdBanner';
@@ -43,7 +43,40 @@ export default function ProfileTab({
   const [showChurchRegistration, setShowChurchRegistration] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showTranslationMenu, setShowTranslationMenu] = useState(false);
+  const [showNoticeMenu, setShowNoticeMenu] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [isSavingChurch, setIsSavingChurch] = useState(false);
+
+  // Sample notices data - 나중에 API/DB로 대체 가능
+  interface Notice {
+    id: string;
+    title: string;
+    content: string;
+    date: string;
+    isImportant?: boolean;
+  }
+
+  const notices: Notice[] = [
+    {
+      id: '1',
+      title: '서비스 점검 안내',
+      content: '2월 25일 자정 ~ 새벽 1시에 시스템 점검이 예정되어 있습니다. 이 시간에는 서비스를 이용하실 수 없으니 참고 부탁드립니다.',
+      date: '2월 24일',
+      isImportant: true,
+    },
+    {
+      id: '2',
+      title: '새로운 번역본 추가',
+      content: '새로운 성경 번역본이 추가되었습니다. 이제 더 다양한 번역본으로 필사를 진행할 수 있습니다.',
+      date: '2월 20일',
+    },
+    {
+      id: '3',
+      title: '달란트 마켓 오픈 예정',
+      content: '달란트 마켓이 곧 오픈될 예정입니다. 획득한 포인트로 다양한 상품을 교환할 수 있게 됩니다.',
+      date: '2월 15일',
+    },
+  ];
 
   const translationOptions: { value: api.BibleTranslation; label: string }[] = [
     { value: 'nkrv', label: '개역개정' },
@@ -99,6 +132,97 @@ export default function ProfileTab({
         onComplete={handleChurchComplete}
         currentChurches={currentChurches}
       />
+    );
+  }
+
+  // 공지사항 상세 보기
+  if (showNoticeMenu && selectedNotice) {
+    return (
+      <div className="min-h-screen bg-[#fef7ff]">
+        <div className="max-w-[360px] mx-auto w-full min-h-screen bg-white flex flex-col">
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-white border-b border-[#e7e0ec]">
+            <div className="flex items-center px-4 h-14">
+              <button
+                onClick={() => setSelectedNotice(null)}
+                className="p-2 -ml-2 hover:bg-[#f5f5f5] rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6 text-[#1d1b20]" />
+              </button>
+              <h1 className="flex-1 text-[#1d1b20] text-lg font-semibold ml-2">공지사항</h1>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {selectedNotice.isImportant && (
+              <div className="mb-4 p-3 bg-[#ffebee] rounded-[12px] flex items-start gap-2">
+                <span className="px-2 py-1 bg-[#ba1a1a] text-white text-xs font-bold rounded">중요</span>
+              </div>
+            )}
+            <h2 className="text-[#1d1b20] text-2xl font-bold mb-2">{selectedNotice.title}</h2>
+            <p className="text-[#79747e] text-sm mb-6">{selectedNotice.date}</p>
+            <div className="text-[#1d1b20] text-base leading-relaxed whitespace-pre-wrap">
+              {selectedNotice.content}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 공지사항 목록
+  if (showNoticeMenu) {
+    return (
+      <div className="min-h-screen bg-[#fef7ff]">
+        <div className="max-w-[360px] mx-auto w-full min-h-screen bg-white flex flex-col">
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-white border-b border-[#e7e0ec]">
+            <div className="flex items-center px-4 h-14">
+              <button
+                onClick={() => setShowNoticeMenu(false)}
+                className="p-2 -ml-2 hover:bg-[#f5f5f5] rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6 text-[#1d1b20]" />
+              </button>
+              <h1 className="flex-1 text-[#1d1b20] text-lg font-semibold ml-2">공지사항</h1>
+            </div>
+          </div>
+
+          {/* Notice List */}
+          <div className="p-4 space-y-2">
+            {notices.length === 0 ? (
+              <div className="text-center py-12">
+                <Bell className="w-8 h-8 text-[#d0bcff] mx-auto mb-3" />
+                <p className="text-[#79747e]">공지사항이 없습니다</p>
+              </div>
+            ) : (
+              notices.map((notice) => (
+                <button
+                  key={notice.id}
+                  onClick={() => setSelectedNotice(notice)}
+                  className="w-full text-left bg-white rounded-[12px] p-4 border border-[#e7e0ec] hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        {notice.isImportant && (
+                          <span className="px-2 py-0.5 bg-[#ba1a1a] text-white text-xs font-bold rounded">
+                            중요
+                          </span>
+                        )}
+                        <h3 className="text-[#1d1b20] font-semibold text-base flex-1">{notice.title}</h3>
+                      </div>
+                      <p className="text-[#79747e] text-xs mb-1">{notice.date}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-[#79747e] flex-shrink-0 mt-1" />
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -320,6 +444,17 @@ export default function ProfileTab({
           <div className="flex items-center gap-3">
             <Settings className="w-5 h-5 text-[#49454f]" />
             <span className="text-[#1d1b20] font-medium text-base">설정</span>
+          </div>
+          <ChevronRight className="w-5 h-5 text-[#79747e]" />
+        </button>
+
+        <button
+          onClick={() => setShowNoticeMenu(true)}
+          className="w-full flex items-center justify-between p-4 hover:bg-[#f5f5f5] transition-colors active:bg-[#e8e8e8]"
+        >
+          <div className="flex items-center gap-3">
+            <Bell className="w-5 h-5 text-[#49454f]" />
+            <span className="text-[#1d1b20] font-medium text-base">공지사항</span>
           </div>
           <ChevronRight className="w-5 h-5 text-[#79747e]" />
         </button>
