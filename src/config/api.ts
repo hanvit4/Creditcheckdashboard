@@ -3,18 +3,21 @@
  * 환경에 따라 서버 주소를 쉽게 변경할 수 있습니다.
  */
 
-import { projectId } from '../utils/supabase/info';
+import { supabaseUrl } from '../utils/supabase/info';
 
 // 환경별 설정
 const ENV = import.meta.env.MODE || 'development';
 
 // 함수 이름 설정
-const FUNCTION_NAME = 'server'; // 배포된 Edge Function 이름
+const FUNCTION_NAME = import.meta.env.VITE_SUPABASE_FUNCTION_NAME || 'server'; // 배포된 Edge Function 이름
+
+const customApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const defaultApiBaseUrl = `${supabaseUrl}/functions/v1/${FUNCTION_NAME}`;
 
 // API 기본 URL
 export const API_CONFIG = {
     // Supabase Edge Function URL
-    baseUrl: `https://${projectId}.supabase.co/functions/v1/${FUNCTION_NAME}`,
+    baseUrl: customApiBaseUrl || defaultApiBaseUrl,
 
     // 개발/프로덕션 분리가 필요하면 아래와 같이 사용
     // baseUrl: ENV === 'production'
