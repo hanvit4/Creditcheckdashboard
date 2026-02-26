@@ -39,13 +39,13 @@
 
 이미 다음 파일들이 구현되어 있습니다:
 
-#### 서버 API (src/supabase/functions/server/index.tsx)
+#### 서버 API (supabase/functions/server/index.ts)
 ```typescript
 // 소셜 계정 연동 API 엔드포인트
-GET  /make-server-3ed9c009/user/providers           // 연동된 계정 조회
-POST /make-server-3ed9c009/user/providers/link      // 계정 연동
-DELETE /make-server-3ed9c009/user/providers/:id    // 계정 연동 해제
-POST /make-server-3ed9c009/user/providers/disconnect-all // 모든 계정 연동 해제
+GET  /server/user/providers                  // 연동된 계정 조회
+POST /server/user/providers/link             // 계정 연동
+DELETE /server/user/providers/:provider      // 계정 연동 해제
+POST /server/user/providers/disconnect-all   // 모든 계정 연동 해제
 ```
 
 #### 클라이언트 API 래퍼 (src/utils/api.tsx)
@@ -64,10 +64,10 @@ disconnectAllProviders()              // 모든 계정 연동 해제
 
 ---
 
-## 🔗 소셜 계정 연동 구현 (미완성 - 추가 작업 필요)
+## 🔗 소셜 계정 연동 구현 (현재 기준)
 
-현재 `LinkedProviders.tsx`의 `handleLinkGoogle()`, `handleLinkKakao()` 등은 스텁 상태입니다.  
-실제 구현을 위해서는 다음 과정이 필요합니다:
+현재 `LinkedProviders.tsx`는 `supabase.auth.linkIdentity()` / `supabase.auth.unlinkIdentity()`를 사용해 연동/해제를 처리합니다.
+OAuth 공급자 설정이 올바르면 프로필 탭에서 바로 동작합니다.
 
 ### Google OAuth 연동 예시
 
@@ -77,43 +77,23 @@ disconnectAllProviders()              // 모든 계정 연동 해제
    - 클라이언트 ID, 클라이언트 시크릿 복사
    - Authorized redirect URIs에 `https://wrdxngjzffmsrnnemmel.supabase.co/auth/v1/callback` 추가
 
-2. **클라이언트 코드에서 Google OAuth 호출**
+2. **클라이언트 코드 동작 확인 (이미 구현됨)**
    ```typescript
-   // LinkedProviders.tsx에서 구현 필요
-   const handleLinkGoogle = async () => {
-     const { data, error } = await supabase.auth.signInWithOAuth({
-       provider: 'google',
-       options: {
-         queryParams: {
-           access_type: 'offline',
-           prompt: 'consent',
-         },
-       },
-     });
+   // LinkedProviders.tsx (요약)
+   const { data, error } = await supabase.auth.linkIdentity({
+     provider: 'google',
+     options: { redirectTo: window.location.origin },
+   });
 
-     if (error) {
-       console.error('Google OAuth failed:', error);
-       return;
-     }
-
-     // OAuth 성공 후 user 정보 추출
-     const user = data.user;
-     const provider_id = user.identities?.find(i => i.provider === 'google')?.id;
-
-     // linkProvider() API 호출
-     await api.linkProvider({
-       provider: 'google',
-       provider_user_id: provider_id,
-       provider_email: user.email,
-       provider_name: user.user_metadata?.full_name,
-     });
-   };
+   if (data?.url) {
+     window.location.href = data.url;
+   }
    ```
 
-3. **Kakao OAuth 연동** (마찬가지로 구현)
+3. **Kakao OAuth 연동**
    - Supabase에서 Kakao OAuth 설정
    - Kakao Developers 콘솔에서 앱 생성
-   - 같은 방식으로 `handleLinkKakao()` 구현
+   - 현재 구현은 `options.scopes = 'profile_nickname account_email'` 사용
 
 ---
 
@@ -180,12 +160,12 @@ CREATE TABLE public.user_providers (
 ### 2. API 테스트 (curl)
 ```bash
 # 현재 사용자의 연동된 계정 조회
-curl -X GET https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server-3ed9c009/user/providers \
+curl -X GET https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/server/server/user/providers \
   -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json"
 
 # Google 계정 연동 (테스트용)
-curl -X POST https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server-3ed9c009/user/providers/link \
+curl -X POST https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/server/server/user/providers/link \
   -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -196,7 +176,7 @@ curl -X POST https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server-3
   }'
 
 # 계정 연동 해제
-curl -X DELETE https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server-3ed9c009/user/providers/{provider_id} \
+curl -X DELETE https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/server/server/user/providers/{provider_id} \
   -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json"
 ```
@@ -221,10 +201,10 @@ curl -X DELETE https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server
 
 ## 📝 다음 구현 사항
 
-1. **Google/Kakao/Apple OAuth 통합** - handleLink* 함수 구현
+1. **GitHub OAuth 통합** - provider 확장
 2. **자동 계정 통합** - 이미 존재하는 이메일로 새 OAuth 시도 시 자동 연동
 3. **계정 병합** - 같은 이메일의 여러 OAuth 계정을 하나로 통합
-4. **소셜 로그인 버튼** - 로그인 화면에 "Google/Kakao로 로그인" 추가
+4. **레거시 `/user/providers*` API 정리** - 현재 UI는 Supabase Identity 직결 방식 사용
 
 ---
 

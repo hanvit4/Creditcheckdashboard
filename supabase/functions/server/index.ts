@@ -62,7 +62,7 @@ app.get(route("/health"), (c) => {
 // Debug endpoint to check routes
 app.get(route("/debug"), (c) => {
   console.log('Debug endpoint hit');
-  return c.json({ 
+  return c.json({
     message: "Debug endpoint working",
     prefix: ROUTE_PREFIX,
     path: c.req.path
@@ -90,7 +90,7 @@ app.get(route("/user/profile"), verifyAuth, async (c) => {
     if (!userRecord) {
       console.warn('User record not found for auth_user_id:', authUserId);
       // Create a default profile if not found
-      return c.json({ 
+      return c.json({
         profile: {
           userId: null,
           email: 'unknown@example.com',
@@ -101,7 +101,7 @@ app.get(route("/user/profile"), verifyAuth, async (c) => {
           creditsEarned: 0,
           creditsSpent: 0,
           createdAt: new Date().toISOString(),
-        } 
+        }
       });
     }
 
@@ -400,7 +400,7 @@ app.get(route("/completed-verses"), verifyAuth, async (c) => {
 // 소셜로그인 연동 API
 // ===================================
 
-// GET /make-server-3ed9c009/user/providers - 사용자의 소셜 계정 정보 조회
+// GET /server/user/providers - 사용자의 소셜 계정 정보 조회
 app.get(route("/user/providers"), verifyAuth, async (c) => {
   try {
     const authUserId = c.get('userId');
@@ -432,7 +432,7 @@ app.get(route("/user/providers"), verifyAuth, async (c) => {
   }
 });
 
-// POST /make-server-3ed9c009/user/providers/link - 소셜 계정 연동
+// POST /server/user/providers/link - 소셜 계정 연동
 // Body: { provider, provider_name, provider_email }
 app.post(route("/user/providers/link"), verifyAuth, async (c) => {
   try {
@@ -465,7 +465,7 @@ app.post(route("/user/providers/link"), verifyAuth, async (c) => {
   }
 });
 
-// DELETE /make-server-3ed9c009/user/providers/:provider - 소셜 계정 연동 해제
+// DELETE /server/user/providers/:provider - 소셜 계정 연동 해제
 app.delete(route("/user/providers/:provider"), verifyAuth, async (c) => {
   try {
     const authUserId = c.get('userId');
@@ -490,19 +490,34 @@ app.delete(route("/user/providers/:provider"), verifyAuth, async (c) => {
   }
 });
 
-// POST /make-server-3ed9c009/user/providers/disconnect-all - 모든 소셜 계정 연동 해제
+// POST /server/user/providers/disconnect-all - 모든 소셜 계정 연동 해제
 app.post(route("/user/providers/disconnect-all"), verifyAuth, async (c) => {
   try {
     const authUserId = c.get('userId');
 
-    const { error } = await supabase.from('users')
+    const { data: userRecord, error: userErr } = await supabase.from('users')
+      .select('id')
+      .eq('auth_user_id', authUserId)
+      .single();
+
+    if (userErr || !userRecord) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    const { error: userUpdateErr } = await supabase.from('users')
       .update({
         provider: null,
         updated_at: new Date().toISOString(),
       })
       .eq('auth_user_id', authUserId);
 
-    if (error) throw error;
+    if (userUpdateErr) throw userUpdateErr;
+
+    const { error: providersDeleteErr } = await supabase.from('user_providers')
+      .delete()
+      .eq('user_id', userRecord.id);
+
+    if (providersDeleteErr) throw providersDeleteErr;
 
     return c.json({ status: 'all_disconnected' });
   } catch (error) {
@@ -515,7 +530,7 @@ app.post(route("/user/providers/disconnect-all"), verifyAuth, async (c) => {
 // 교회 조회/등록 API
 // ===================================
 
-// GET /make-server-3ed9c009/churches?search=&city=
+// GET /server/churches?search=&city=
 app.get(route("/churches"), verifyAuth, async (c) => {
   try {
     const search = (c.req.query('search') || '').trim();
@@ -557,7 +572,7 @@ app.get(route("/churches"), verifyAuth, async (c) => {
   }
 });
 
-// GET /make-server-3ed9c009/user/church-memberships
+// GET /server/user/church-memberships
 app.get(route("/user/church-memberships"), verifyAuth, async (c) => {
   try {
     const authUserId = c.get('userId');
@@ -622,7 +637,7 @@ app.get(route("/user/church-memberships"), verifyAuth, async (c) => {
   }
 });
 
-// POST /make-server-3ed9c009/user/church-memberships
+// POST /server/user/church-memberships
 // body: { churchId?: string, churchCode?: string, manualChurch?: { name, address, city, district, phone, pastor, denomination } }
 app.post(route("/user/church-memberships"), verifyAuth, async (c) => {
   try {
@@ -754,7 +769,7 @@ app.post(route("/user/church-memberships"), verifyAuth, async (c) => {
   }
 });
 
-// DELETE /make-server-3ed9c009/user/church-memberships/:membershipId
+// DELETE /server/user/church-memberships/:membershipId
 app.delete(route("/user/church-memberships/:membershipId"), verifyAuth, async (c) => {
   try {
     const authUserId = c.get('userId');
@@ -818,24 +833,6 @@ app.delete(route("/user/church-memberships/:membershipId"), verifyAuth, async (c
   } catch (error) {
     console.error('Error deleting church membership:', error);
     return c.json({ error: 'Failed to delete church membership' }, 500);
-  }
-});
-
-// POST /make-server-3ed9c009/user/providers/disconnect-all - 모든 소셜 계정 연동 해제 (계정 삭제 시)
-app.post(route("/user/providers/disconnect-all"), verifyAuth, async (c) => {
-  try {
-    const userId = c.get('userId');
-
-    const { error } = await supabase.from('user_providers')
-      .delete()
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    return c.json({ status: 'all_disconnected' });
-  } catch (error) {
-    console.error('Error disconnecting all providers:', error);
-    return c.json({ error: 'Failed to disconnect providers' }, 500);
   }
 });
 

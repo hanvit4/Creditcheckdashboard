@@ -4,7 +4,7 @@
 
 **목표**: Supabase를 활용하여 여러 소셜 계정(Google, Kakao, Apple 등)을 하나의 사용자 계정에 연동할 수 있는 기능 구현
 
-**상태**: ✅ **완료** (기본 인프라 및 UI 구현)
+**상태**: ✅ **핵심 기능 동작 중** (소셜 로그인/연동 UI + Supabase Identity 기반 연동)
 
 ---
 
@@ -34,14 +34,14 @@ daily_stats (일일 통계)
 ### 2️⃣ 서버 API 엔드포인트
 | 엔드포인트 | 메서드 | 기능 | 상태 |
 |-----------|--------|------|------|
-| `/user/providers` | GET | 연동된 소셜 계정 조회 | ✅ |
-| `/user/providers/link` | POST | 소셜 계정 연동 | ✅ |
-| `/user/providers/:id` | DELETE | 소셜 계정 연동 해제 | ✅ |
-| `/user/providers/disconnect-all` | POST | 모든 소셜 계정 연동 해제 | ✅ |
+| `/user/providers` | GET | 연동된 소셜 계정 조회 | ⚠️ 레거시 |
+| `/user/providers/link` | POST | 소셜 계정 연동 | ⚠️ 레거시 |
+| `/user/providers/:id` | DELETE | 소셜 계정 연동 해제 | ⚠️ 레거시 |
+| `/user/providers/disconnect-all` | POST | 모든 소셜 계정 연동 해제 | ⚠️ 레거시 |
 
-**파일**: [src/supabase/functions/server/index.tsx](./src/supabase/functions/server/index.tsx#L255-L374)
+**파일**: [supabase/functions/server/index.ts](./supabase/functions/server/index.ts)
 
-### 3️⃣ 클라이언트 API 래퍼
+### 3️⃣ 클라이언트 API 래퍼 (레거시)
 ```typescript
 getUserProviders()                        // 연동된 계정 조회
 linkProvider(data: ProviderLinkData)     // 계정 연동
@@ -51,6 +51,8 @@ disconnectAllProviders()                 // 모든 계정 연동 해제
 
 **파일**: [src/utils/api.tsx](./src/utils/api.tsx#L125-L160)
 
+> 현재 `LinkedProviders.tsx`는 위 API 래퍼 대신 `supabase.auth.linkIdentity()` / `supabase.auth.unlinkIdentity()`를 직접 사용합니다.
+
 ### 4️⃣ UI 컴포넌트
 **LinkedProviders.tsx** - 프로필 탭에 통합
 - ✅ 연동된 소셜 계정 목록 표시
@@ -59,6 +61,7 @@ disconnectAllProviders()                 // 모든 계정 연동 해제
 - ✅ 새로운 소셜 계정 연동 버튼 (Google, Kakao, Apple)
 - ✅ 로딩/에러 상태 처리
 - ✅ provider별 색상 및 아이콘 구분
+- ✅ OAuth 콜백 복구/에러 매핑 처리 (`pending_social_link`, URL 에러 파싱)
 
 **파일**: [src/components/LinkedProviders.tsx](./src/components/LinkedProviders.tsx)
 
@@ -91,7 +94,7 @@ src/utils/api.tsx
   - unlinkProvider() 함수 추가
   - disconnectAllProviders() 함수 추가
   
-src/supabase/functions/server/index.tsx
+supabase/functions/server/index.ts
   - 소셜 계정 API 엔드포인트 4개 추가
 ```
 
@@ -147,7 +150,7 @@ npm run dev
 └─────────────────────────────────┘
 ```
 
-### 소셜 계정 연동 시퀀스
+### 소셜 계정 연동 시퀀스 (현재 구현)
 ```
 사용자
   │
@@ -156,22 +159,18 @@ npm run dev
   ▼
 LinkedProviders (UI)
   │
-  ├─ handleLinkGoogle() 호출
+  ├─ handleLinkProvider('google') 호출
   │
   ▼
-API (linkProvider)
+Supabase Auth
   │
-  ├─ POST /user/providers/link
-  │
-  ▼
-서버 (index.tsx)
-  │
-  ├─ user_providers에 새 레코드 생성
+  ├─ supabase.auth.linkIdentity({ provider: 'google' })
+  ├─ 필요 시 OAuth 페이지 리다이렉트
   │
   ▼
-Database
+OAuth 콜백 복귀 후
   │
-  ├─ INSERT INTO user_providers(...)
+  ├─ supabase.auth.getUser().identities 재조회
   │
   ▼
 UI 업데이트
@@ -264,19 +263,17 @@ CREATE TABLE public.user_providers (
 - [x] 마이그레이션 SQL 작성
 - [x] RLS 정책 구현
 - [x] Trigger 함수 구현
-- [x] 서버 API 엔드포인트 (4개)
-- [x] 클라이언트 API 래퍼
+- [x] 서버 API 엔드포인트 (4개, 레거시)
+- [x] 클라이언트 API 래퍼 (레거시)
 - [x] LinkedProviders UI 컴포넌트
 - [x] ProfileTab 통합
 - [x] 오류 처리 및 로딩 상태
+- [x] Google/Kakao/Apple 계정 연동 버튼 및 OAuth 리다이렉트 처리
+- [x] 로그인 화면 소셜 로그인 버튼 (Google/Kakao/Apple)
 - [x] 설치 가이드 문서화
 
 ### ⏳ 추후 구현 (선택사항)
-- [ ] Google OAuth 통합 (handleLinkGoogle 구현)
-- [ ] Kakao OAuth 통합 (handleLinkKakao 구현)
-- [ ] Apple OAuth 통합
 - [ ] GitHub OAuth 통합
-- [ ] 로그인 화면에 소셜 로그인 버튼 추가
 - [ ] 자동 계정 통합 (같은 이메일)
 - [ ] 계정 병합 기능
 - [ ] KV 스토어 → RDB 마이그레이션 스크립트
@@ -303,7 +300,7 @@ CREATE TABLE public.user_providers (
 
 ### 코드 파일
 - [supabase/migrations/001_social_login_setup.sql](./supabase/migrations/001_social_login_setup.sql) - DB 마이그레이션
-- [src/supabase/functions/server/index.tsx](./src/supabase/functions/server/index.tsx) - 서버 API
+- [supabase/functions/server/index.ts](./supabase/functions/server/index.ts) - 서버 API
 - [src/utils/api.tsx](./src/utils/api.tsx) - 클라이언트 래퍼
 - [src/components/LinkedProviders.tsx](./src/components/LinkedProviders.tsx) - UI 컴포넌트
 - [src/components/ProfileTab.tsx](./src/components/ProfileTab.tsx) - ProfileTab 통합
@@ -325,7 +322,7 @@ npm run dev
 
 ### 3단계: Google OAuth 구현 (선택)
 - Supabase 대시보드에서 Google OAuth 설정
-- LinkedProviders.tsx에서 handleLinkGoogle() 구현
+- LinkedProviders.tsx에서 `handleLinkProvider('google')` 경로 점검
 - [SOCIAL_LOGIN_SETUP.md](./SOCIAL_LOGIN_SETUP.md) 참고
 
 ---
@@ -363,11 +360,11 @@ npm run dev
 ### 2. API 테스트 (curl)
 ```bash
 # 연동된 계정 조회
-curl -X GET https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server-3ed9c009/user/providers \
+curl -X GET https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/server/server/user/providers \
   -H "Authorization: Bearer <YOUR_TOKEN>"
 
 # 계정 연동
-curl -X POST https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/make-server-3ed9c009/user/providers/link \
+curl -X POST https://wrdxngjzffmsrnnemmel.supabase.co/functions/v1/server/server/user/providers/link \
   -H "Authorization: Bearer <YOUR_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"provider":"google","provider_user_id":"123","provider_email":"user@gmail.com"}'

@@ -11,15 +11,15 @@
 - **자동 Trigger**: auth.users 생성 시 public.users 자동 생성
 - **RLS 정책**: 사용자별 데이터 격리
 
-### 2. **서버 API 엔드포인트** ✅
+### 2. **서버 API 엔드포인트** ✅ (레거시)
 ```javascript
 GET    /user/providers                    // 연동된 소셜 계정 조회
 POST   /user/providers/link               // 소셜 계정 연동
-DELETE /user/providers/:id               // 소셜 계정 연동 해제
+DELETE /user/providers/:provider         // 소셜 계정 연동 해제
 POST   /user/providers/disconnect-all    // 모든 소셜 계정 연동 해제
 ```
 
-### 3. **클라이언트 API 래퍼** ✅
+### 3. **클라이언트 API 래퍼** ✅ (레거시)
 ```typescript
 // src/utils/api.tsx
 getUserProviders()
@@ -36,6 +36,8 @@ disconnectAllProviders()
 - 새로운 소셜 계정 연동 버튼
 - 로딩/에러 상태 처리
 - 아이콘 및 배색으로 provider 구분
+- `supabase.auth.linkIdentity()` / `unlinkIdentity()` 기반 연동/해제
+- OAuth 콜백 복구 및 연동 실패 메시지 매핑 처리
 
 ### 5. **마이그레이션 SQL 파일** ✅
 [supabase/migrations/001_social_login_setup.sql](./supabase/migrations/001_social_login_setup.sql)
@@ -55,9 +57,10 @@ src/
 │   └── LinkedProviders.tsx               # 소셜 계정 연동 관리 UI
 ├── utils/
 │   └── api.tsx                           # 소셜 계정 API 래퍼 추가
-└── supabase/
-    └── functions/server/
-        └── index.tsx                     # 소셜 계정 API 엔드포인트 추가
+supabase/
+└── functions/
+    └── server/
+        └── index.ts                      # 소셜 계정 API 엔드포인트
 
 supabase/
 └── migrations/
@@ -82,9 +85,9 @@ SOCIAL_LOGIN_SETUP.md                    # 설치 및 구현 가이드
 3. "소셜 계정 연동" 섹션 확인
 4. 연동된 소셜 계정 표시 및 관리 가능
 
-### Step 3: Google/Kakao OAuth 구현 (선택사항)
-- `LinkedProviders.tsx`의 `handleLinkGoogle()`, `handleLinkKakao()` 함수 구현
-- Supabase에서 각 provider의 OAuth 설정 활성화
+### Step 3: OAuth Provider 설정 확인 (선택사항)
+- Supabase에서 Google/Kakao/Apple provider 설정 활성화
+- `LinkedProviders.tsx`의 `handleLinkProvider()` 동작 확인
 - 자세한 방법은 [SOCIAL_LOGIN_SETUP.md](./SOCIAL_LOGIN_SETUP.md) 참고
 
 ---
@@ -119,15 +122,15 @@ User (1) ──────┐
 ## 🐛 미완성 항목 (추후 구현 필요)
 
 ### 1. OAuth 통합
-- [ ] Google OAuth 구현
-- [ ] Kakao OAuth 구현
-- [ ] Apple OAuth 구현
+- [x] Google OAuth 연동 경로 구현
+- [x] Kakao OAuth 연동 경로 구현
+- [x] Apple OAuth 연동 경로 구현
 - [ ] GitHub OAuth 구현
 
 ### 2. 고급 기능
 - [ ] 자동 계정 통합 (같은 이메일로 OAuth 시도 시)
 - [ ] 계정 병합 기능 (duplicate 사용자 통합)
-- [ ] 로그인 화면에 "소셜로그인" 버튼 추가
+- [x] 로그인 화면 소셜 로그인 버튼 (Google/Kakao/Apple)
 
 ### 3. KV 스토어 마이그레이션
 - [ ] 기존 프로필 데이터 (KV) → users 테이블로 이동
@@ -142,10 +145,11 @@ User (1) ──────┐
 ```
 사용자가 "Google로 연동" 버튼 클릭
          ↓
-Google OAuth 인증 (Supabase 담당)
+supabase.auth.linkIdentity()
          ↓
-user_providers에 새 레코드 생성
-(user_id, provider, provider_user_id, provider_email 등)
+OAuth 인증/리다이렉트 완료
+         ↓
+supabase.auth.getUser().identities 재조회
          ↓
 LinkedProviders UI에 새 계정 표시
 ```
@@ -232,10 +236,10 @@ WHERE tablename IN ('users', 'user_providers', 'completed_verses');
 - [x] ProfileTab에 통합
 - [x] RLS 정책 적용
 - [x] 설치 및 사용 가이드 문서화
-- [ ] Google OAuth 구현
-- [ ] Kakao OAuth 구현
-- [ ] Apple OAuth 구현
-- [ ] 로그인 화면 소셜 버튼 추가
+- [x] Google OAuth 연동 경로 구현
+- [x] Kakao OAuth 연동 경로 구현
+- [x] Apple OAuth 연동 경로 구현
+- [x] 로그인 화면 소셜 버튼 추가
 - [ ] KV 스토어 → RDB 마이그레이션 스크립트
 
 ---
